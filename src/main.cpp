@@ -167,6 +167,7 @@ void signalsUpdate(unsigned long intervalos){
   //signals.error > 0 ? signals.u = false: signals.u = true; // Control sin histéresis
   if(abs(signals.error) > signals.emax) signals.error >= 0? signals.u = false: signals.u = true; //Control con histeresis
   digitalWrite(PIN_LED_G, signals.u);
+  digitalWrite(PIN_RELAY, signals.u);
   
 }
 
@@ -179,6 +180,8 @@ void setup() {
   pinMode(PIN_ENC_PUSH,INPUT_PULLUP);
   pinMode(PIN_LED_G, OUTPUT);
   digitalWrite(PIN_LED_G, HIGH);
+  pinMode(PIN_RELAY, OUTPUT);
+  digitalWrite(PIN_RELAY, LOW);
   Serial.println(F("Iniciando Display"));
   displayInit();
   Serial.println(F("Iniciando DHT22"));
