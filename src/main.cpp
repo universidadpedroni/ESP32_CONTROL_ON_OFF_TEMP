@@ -9,6 +9,7 @@
 #include "SPIFFS.h"
 #include "blink.h"
 #include "config.h"
+#include "controlConstants.h"
 
 const char* ssid = "iPhone de Juan";
 const char* password = "HelpUsObiJuan";
@@ -19,7 +20,7 @@ blink parpadeo(LED_BUILTIN);
 DHT dht(DHT_PIN, DHT22);
 ESP32Encoder myEnc;
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire);
-controlSignals signals = {20, 0, 0, false};
+controlSignals signals = {TREF_DEFAULT, 0, 0, false, EMAX_DEFAULT};
 
 // ***** FUNCIONES DE INICIALIZACION ***** //
 
@@ -118,7 +119,7 @@ void serverInit(){
       //float error = temperatureRef - temperatureReal;
 
       // Crear un objeto JSON con los datos
-      String json = "{ \"temperatureRef\": " + String(signals.tRef, 2) + ", \"temperatureReal\": " + String(signals.temp, 2) + ", \"error\": " + String(signals.error, 2) + " }";
+      String json = "{ \"temperatureRef\": " + String(signals.tRef, 2) + ", \"temperatureReal\": " + String(signals.temp, 2) + ", \"error\": " + String(signals.error, 2) + ", \"accion\": " + String(signals.u == true? 1:0, 2) + " }";
 
       // Enviar el objeto JSON como respuesta
       request->send(200, "application/json", json);
@@ -145,7 +146,7 @@ void displayUpdate(unsigned long intervalo){
     display.clearDisplay();
     display.setCursor(0,0);
     display.setTextSize(1);
-    display.printf("Tref: %.1fC\nTemp:%.1fC\nErr:%.1f\nAccion:%s\nIP:%s%s\n",
+    display.printf("Tref: %.1fC\nTemp:%.1fC\nErr:%.1f\nAccion:%s\n\nIP:%s%s\n",
                   signals.tRef,
                   signals.temp,
                   signals.error,
@@ -163,7 +164,8 @@ void signalsUpdate(unsigned long intervalos){
   signals.tRef = constrain(myEnc.getCount(),-40.0, 40.0);
   signals.temp = dht.readTemperature();
   signals.error = signals.tRef - signals.temp;
-  signals.error > 0 ? signals.u = false: signals.u = true;
+  //signals.error > 0 ? signals.u = false: signals.u = true; // Control sin histéresis
+  if(abs(signals.error) > signals.emax) signals.error >= 0? signals.u = false: signals.u = true; //Control con histeresis
   digitalWrite(PIN_LED_G, signals.u);
   
 }

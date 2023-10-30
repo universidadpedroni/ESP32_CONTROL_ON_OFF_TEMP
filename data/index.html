@@ -9,33 +9,49 @@
       max-width: 800px;
       height: 400px;
       margin: 0 auto;
+      background-color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial;
     }
     h2 {
-      font-family: Arial;
       font-size: 2.5rem;
       text-align: center;
+      color: #333;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+    .container {
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+      margin-top: 20px;
+      width: 100%;
     }
   </style>
 </head>
 <body>
-  <h2>ESP Weather Station</h2>
+  <h2>ESP Control de Temperatura</h2>
   <div id="chart-container" class="container"></div>
 </body>
 <script>
   var chart = new Highcharts.Chart({
     chart: { renderTo: 'chart-container' },
-    title: { text: 'Temperature Data' },
+    title: { text: 'Datos de ensayo' },
     series: [
       {
-        name: 'Temperature Reference',
+        name: 'T. Ref',
         data: [],
       },
       {
-        name: 'Temperature Real',
+        name: 'Temp',
         data: [],
       },
       {
         name: 'Error',
+        data: [],
+      },
+      {
+        name: 'Accion',
         data: [],
       }
     ],
@@ -59,15 +75,18 @@
         var yRef = data.temperatureRef;
         var yReal = data.temperatureReal;
         var yError = data.error;
+        var yAccion = 10 * data.accion;  // Multiplico por 10 para mejorar el gráfico
 
         if (chart.series[0].data.length > 40) {
           chart.series[0].addPoint([x, yRef], true, true, true);
           chart.series[1].addPoint([x, yReal], true, true, true);
           chart.series[2].addPoint([x, yError], true, true, true);
+          chart.series[3].addPoint([x, yAccion], true, true, true);
         } else {
           chart.series[0].addPoint([x, yRef], true, false, true);
           chart.series[1].addPoint([x, yReal], true, false, true);
           chart.series[2].addPoint([x, yError], true, false, true);
+          chart.series[3].addPoint([x, yAccion], true, false, true);
         }
       }
     };

@@ -32,11 +32,5 @@ const int I2C_ADDRESS = 0x3C;
 const int SCREEN_WIDTH = 128;
 const int SCREEN_HEIGHT = 64;
 
-struct controlSignals{
-    float tRef;     // Temperatura de referencia
-    float temp;     // Temperatura medida
-    float error;    // Error
-    bool u;        // Acción de control
 
-};
 #endif
