@@ -10,9 +10,18 @@
 #include "blink.h"
 #include "config.h"
 #include "controlConstants.h"
+#include "MQTTConstants.h"
 
-const char* ssid = "iPhone de Juan";
-const char* password = "HelpUsObiJuan";
+
+#include "Adafruit_MQTT.h"
+#include "Adafruit_MQTT_Client.h"
+#include "ArduinoHttpClient.h"
+#include "WiFiClientSecure.h"
+
+//const char* ssid = "iPhone de Juan";
+//const char* password = "HelpUsObiJuan";
+const char* ssid = "TheShield";
+const char* password = "JamesBond007";
 #define CONNECT_TIME 10000
 
 AsyncWebServer server(80);
@@ -21,6 +30,14 @@ DHT dht(DHT_PIN, DHT22);
 ESP32Encoder myEnc;
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire);
 controlSignals signals = {TREF_DEFAULT, 0, 0, false, EMAX_DEFAULT};
+
+WiFiClient client;
+Adafruit_MQTT_Client mqtt(&client, MQTT_HOST, MQTT_PORT, IO_USERNAME, IO_KEY);
+
+Adafruit_MQTT_Publish mqttTemp = Adafruit_MQTT_Publish(&mqtt, MQTT_PUB_TEMP);
+Adafruit_MQTT_Publish mqttTref = Adafruit_MQTT_Publish(&mqtt, MQTT_PUB_TREF);
+Adafruit_MQTT_Publish mqttError = Adafruit_MQTT_Publish(&mqtt, MQTT_PUB_ERR);
+Adafruit_MQTT_Publish mqttAccion = Adafruit_MQTT_Publish(&mqtt, MQTT_PUB_ACC);
 
 // ***** FUNCIONES DE INICIALIZACION ***** //
 
@@ -131,8 +148,48 @@ void serverInit(){
 }
 
 // ***** FUNCIONES DE OPERACION ***** //
+void MQTT_connect() {
+  int8_t ret;
 
+  // Stop if already connected.
+  if (mqtt.connected()) {
+    return;
+  }
 
+  Serial.print("Connecting to MQTT... ");
+
+  uint8_t retries = 3;
+  while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
+       Serial.println(mqtt.connectErrorString(ret));
+       Serial.println("Retrying MQTT connection in 5 seconds...");
+       mqtt.disconnect();
+       delay(5000);  // wait 5 seconds
+       retries--;
+       if (retries == 0) {
+         // basically die and wait for WDT to reset me
+         while (1);
+       }
+  }
+  Serial.println("MQTT Connected!");
+}
+
+void mqttUpdate(unsigned long intervalo){
+  static unsigned long previousMillis = 0;        // will store last time LED was updated
+	//const long interval = 1000;           // interval at which to blink (milliseconds)
+	unsigned long currentMillis = millis();
+	
+	
+	if(currentMillis - previousMillis > intervalo) 
+	{
+		previousMillis = currentMillis;
+    MQTT_connect();
+    mqttTemp.publish(signals.temp);//== true? Serial.println("MQTT temp Enviado"): Serial.println("MQTT temp no Enviado");
+    mqttTref.publish(signals.tRef);// == true? Serial.println("MQTT tref Enviado"): Serial.println("MQTT tref no Enviado");
+    mqttError.publish(signals.error);
+    mqttAccion.publish(signals.u);
+    //Serial.println("MQTT enviados");
+  }
+}
 
 void displayUpdate(unsigned long intervalo){
   static unsigned long previousMillis = 0;        // will store last time LED was updated
@@ -197,11 +254,13 @@ void setup() {
   displayWiFi();
   serverInit();
   delay(2000);
+  Serial.printf("MQTT Dashboard: %s\n", MQTT_DASHBOARD);
 }
 
 void loop() {
   signalsUpdate(100);
   displayUpdate(1000);
+  mqttUpdate(10000);
   parpadeo.update(1000);
 }
 

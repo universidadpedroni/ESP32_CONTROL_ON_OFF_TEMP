@@ -12,7 +12,7 @@ struct controlSignals{
 };
 
 const float TREF_DEFAULT = 25;
-const float EMAX_DEFAULT = 1;
+const float EMAX_DEFAULT = 2;
 
 const int PIN_RELAY = GPIO_NUM_4;
 
