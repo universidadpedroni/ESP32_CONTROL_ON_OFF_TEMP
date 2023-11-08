@@ -1,16 +1,19 @@
 #include <Arduino.h>
+#include <WiFiManager.h>
+
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_SH110X.h>
 #include <DHT.h>
 #include <ESP32Encoder.h>
-#include "WiFi.h"
+//#include "WiFi.h"
 #include "ESPAsyncWebServer.h"
 #include "SPIFFS.h"
 #include "blink.h"
 #include "config.h"
 #include "controlConstants.h"
 #include "MQTTConstants.h"
+
 
 
 #include "Adafruit_MQTT.h"
@@ -20,9 +23,11 @@
 
 //const char* ssid = "iPhone de Juan";
 //const char* password = "HelpUsObiJuan";
-const char* ssid = "TheShield";
-const char* password = "JamesBond007";
-#define CONNECT_TIME 10000
+//const char* ssid = "TheShield";
+//const char* password = "JamesBond007";
+//#define CONNECT_TIME 10000
+#define AP_NAME "ESP32 AP"
+#define AP_PASS "password"
 
 AsyncWebServer server(80);
 blink parpadeo(LED_BUILTIN);
@@ -30,6 +35,8 @@ DHT dht(DHT_PIN, DHT22);
 ESP32Encoder myEnc;
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire);
 controlSignals signals = {TREF_DEFAULT, 0, 0, false, EMAX_DEFAULT};
+
+
 
 WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, MQTT_HOST, MQTT_PORT, IO_USERNAME, IO_KEY);
@@ -52,6 +59,7 @@ void displayInit(){
   display.println(F("Datos de Compilacion:"));
   display.printf("Fecha %s\n",__DATE__);
   display.printf("Hora: %s\n",__TIME__);
+  display.println(F("Conectando a Wifi..."));
   display.display();
 }
 
@@ -93,7 +101,18 @@ void spiffsInit(){
 }
 
 void wifiInit(){
-  unsigned long tiempoDeInicio = millis();
+  WiFi.mode(WIFI_STA);
+  WiFiManager wm;
+  bool resultado;
+  resultado = wm.autoConnect(AP_NAME, AP_PASS);
+  if(!resultado){
+    Serial.println("No se pudo conectar a la red. Llamen a los Avengers");
+  }
+  else{
+    Serial.println("Conectadazo");
+  }
+
+  /*unsigned long tiempoDeInicio = millis();
   Serial.printf("Intentando conectar a la red Wifi %s...", ssid);
   WiFi.begin(ssid, password);
   while(WiFi.status() != WL_CONNECTED && (tiempoDeInicio + CONNECT_TIME > millis())){
@@ -107,7 +126,7 @@ void wifiInit(){
   else{
     Serial.println("No se pudo conectar al Wifi. Llamen a los Avengers");
   }
-  
+  */
 }
 
 void displayWiFi(){
@@ -166,10 +185,12 @@ void MQTT_connect() {
        delay(5000);  // wait 5 seconds
        retries--;
        if (retries == 0) {
+          mqttDisponible   = false;
          // basically die and wait for WDT to reset me
-         while (1);
+         //while (1);
        }
   }
+  mqttDisponible = true;
   Serial.println("MQTT Connected!");
 }
 
@@ -191,7 +212,27 @@ void mqttUpdate(unsigned long intervalo){
   }
 }
 
-void displayUpdate(unsigned long intervalo){
+void displayUpdate(){
+  static controlSignals signalsOld = {TREF_DEFAULT, 0, 0, false, EMAX_DEFAULT}; 
+  if((signals.temp != signalsOld.temp) ||
+      (signals.tRef != signalsOld.tRef)) {  // Basta con revisar si alguna de estas dos señales cambió, ya que ellas arrastran los cambios de error y acción de control
+        signalsOld.temp = signals.temp;
+        signalsOld.tRef = signals. tRef;
+        display.clearDisplay();
+        display.setCursor(0,0);
+        display.setTextSize(1);
+        display.printf("Tref: %.1fC\nTemp:%.1fC\nErr:%.1f\nAccion:%s\n\nIP:%s%s\nServ MQTT:%s\n",
+                  signals.tRef,
+                  signals.temp,
+                  signals.error,
+                  signals.u == true? "ON" : "OFF",
+                  WiFi.localIP().toString(),"/home",
+                  mqttDisponible == true? "OK": "No disp");
+
+        display.display();
+      }
+  
+  /*
   static unsigned long previousMillis = 0;        // will store last time LED was updated
 	//const long interval = 1000;           // interval at which to blink (milliseconds)
 	unsigned long currentMillis = millis();
@@ -213,7 +254,7 @@ void displayUpdate(unsigned long intervalo){
     display.display();
     
     	
-	}
+	}*/
 
 }
 
@@ -258,9 +299,10 @@ void setup() {
 }
 
 void loop() {
-  signalsUpdate(100);
-  displayUpdate(1000);
-  mqttUpdate(10000);
+  signalsUpdate(10);
+  //displayUpdate(1000);
+  displayUpdate();
+  if(mqttDisponible) mqttUpdate(10000);
   parpadeo.update(1000);
 }
 
