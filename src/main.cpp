@@ -12,14 +12,16 @@
 #include "blink.h"
 #include "config.h"
 #include "controlConstants.h"
+
+// MQTT
 #include "MQTTConstants.h"
-
-
-
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
 #include "ArduinoHttpClient.h"
 #include "WiFiClientSecure.h"
+
+// OTA
+#include <AsyncElegantOTA.h>
 
 //const char* ssid = "iPhone de Juan";
 //const char* password = "HelpUsObiJuan";
@@ -163,6 +165,8 @@ void serverInit(){
       request->send(SPIFFS, "/index.html", "text/html");
     }
   });
+  // Agregamos OTA
+  AsyncElegantOTA.begin(&server);
   server.begin();
 }
 
@@ -186,6 +190,7 @@ void MQTT_connect() {
        retries--;
        if (retries == 0) {
           mqttDisponible   = false;
+          break;
          // basically die and wait for WDT to reset me
          //while (1);
        }

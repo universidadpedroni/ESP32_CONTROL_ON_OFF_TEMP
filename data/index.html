@@ -32,6 +32,8 @@
 <body>
   <h2>ESP Control de Temperatura</h2>
   <div id="chart-container" class="container"></div>
+  
+  <button onclick="redirectToUpdate()">OTA Update</button>
 </body>
 <script>
   var chart = new Highcharts.Chart({
@@ -92,6 +94,10 @@
     };
     xhttp.open("GET", "/home?getJson", true);
     xhttp.send();
+  }
+
+  function redirectToUpdate() {
+    window.location.href = "/update";
   }
 
   setInterval(updateChart, 1000); // 1000ms request interval

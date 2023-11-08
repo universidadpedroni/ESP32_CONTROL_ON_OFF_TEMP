@@ -7,7 +7,7 @@
 #define MQTT_HOST "io.adafruit.com"   // Nombre de dominio de broker, en caso de que esté en la nube
 #define MQTT_PORT 1883
 #define IO_USERNAME  "Obi_Juan"
-#define IO_KEY       "aio_wWCu92dXQp4vqnmzkVcC9hImDOOM"
+#define IO_KEY       "aio_EwXv83cAQJmoJ7PjDyOpi0QOqMXt"
 
 
 #define MQTT_PUB_TREF "Obi_Juan/feeds/esp-slash-control-slash-tempref"
